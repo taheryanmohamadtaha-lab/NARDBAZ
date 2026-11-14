@@ -1,0 +1,132 @@
+name: ساخت APK اندروید
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'نسخه‌ی Release امضاشده هم ساخته شود؟ (نیاز به GitHub Secrets)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: دریافت کدها
+        uses: actions/checkout@v4
+
+      - name: نصب Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: نصب Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: نصب ابزارهای اندروید
+        uses: android-actions/setup-android@v3
+
+      - name: نصب وابستگی‌ها
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "package-lock.json وجود ندارد؛ با npm install ساخته می‌شود (فایل قفل به‌عنوان Artifact ذخیره می‌شود)."
+            npm install
+            echo "NEED_LOCK=1" >> "$GITHUB_ENV"
+          fi
+
+      - name: اجرای تست‌های قوانین بازی
+        run: npm test
+
+      - name: ساخت نسخه‌ی وب (Vite)
+        run: npm run build
+
+      - name: ساخت پروژه‌ی اندروید (اگر پوشه‌ی android نبود)
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+
+      - name: ساخت آیکون و صفحه‌ی شروع (غیرضروری؛ در صورت خطا ادامه می‌دهد)
+        continue-on-error: true
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#2a1a10' --splashBackgroundColor '#2a1a10'
+
+      - name: انتقال فایل‌های وب به اندروید
+        run: npx cap sync android
+
+      - name: ساخت APK دیباگ
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: نام‌گذاری APK
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk out/Nardbaz-Android.apk
+          ls -la out
+
+      - name: بارگذاری APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nardbaz-Android
+          path: out/Nardbaz-Android.apk
+          if-no-files-found: error
+
+      - name: بارگذاری package-lock.json (برای اضافه کردن به مخزن)
+        if: ${{ env.NEED_LOCK == '1' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-lock
+          path: package-lock.json
+
+      # ---------- نسخه‌ی Release (فقط اجرای دستی با تیک release) ----------
+      - name: بررسی Secretهای امضا
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release }}
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KSP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KS" ] || [ -z "$KSP" ] || [ -z "$KA" ]; then
+            echo "::error::Secretهای ANDROID_KEYSTORE_BASE64 و ANDROID_KEYSTORE_PASSWORD و ANDROID_KEY_ALIAS (و در صورت نیاز ANDROID_KEY_PASSWORD) را در تنظیمات مخزن بسازید."
+            exit 1
+          fi
+
+      - name: ساخت و امضای APK ریلیز
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release }}
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KSP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KP: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -e
+          (cd android && ./gradlew assembleRelease --no-daemon)
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          UNSIGNED=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          "$BT/zipalign" -f -p 4 "$UNSIGNED" "$RUNNER_TEMP/aligned.apk"
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/release.keystore" \
+            --ks-pass "pass:$KSP" --ks-key-alias "$KA" --key-pass "pass:${KP:-$KSP}" \
+            --out out/Nardbaz-Android-release.apk "$RUNNER_TEMP/aligned.apk"
+          "$BT/apksigner" verify out/Nardbaz-Android-release.apk
+          rm -f "$RUNNER_TEMP/release.keystore"
+
+      - name: بارگذاری APK ریلیز
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nardbaz-Android-release
+          path: out/Nardbaz-Android-release.apk
+          if-no-files-found: error

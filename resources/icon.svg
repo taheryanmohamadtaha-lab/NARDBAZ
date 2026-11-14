@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs><linearGradient id="w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a5a34"/><stop offset="1" stop-color="#4a2d18"/></linearGradient>
+  <radialGradient id="a" cx=".38" cy=".3" r=".8"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#c4b48e"/></radialGradient>
+  <radialGradient id="b" cx=".38" cy=".3" r=".8"><stop offset="0" stop-color="#666"/><stop offset="1" stop-color="#111"/></radialGradient></defs>
+  <rect width="1024" height="1024" fill="url(#w)"/>
+  <rect x="70" y="70" width="884" height="884" rx="70" fill="#c99a62" stroke="#2a1a10" stroke-width="14"/>
+  <polygon points="110,110 330,110 220,560" fill="#9c3a2b"/><polygon points="330,110 550,110 440,560" fill="#f1deb4"/>
+  <polygon points="550,110 770,110 660,560" fill="#9c3a2b"/><polygon points="770,110 914,110 880,330 660,560 770,110" fill="#f1deb4" opacity="0"/>
+  <polygon points="770,110 914,110 914,330" fill="#f1deb4"/>
+  <circle cx="300" cy="760" r="120" fill="url(#b)" stroke="#000" stroke-width="6"/><circle cx="300" cy="760" r="78" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="10"/>
+  <circle cx="620" cy="700" r="120" fill="url(#a)" stroke="#8c7a52" stroke-width="6"/><circle cx="620" cy="700" r="78" fill="none" stroke="#786432" stroke-opacity=".5" stroke-width="10"/>
+  <rect x="690" y="520" width="190" height="190" rx="34" fill="#fff" transform="rotate(14 785 615)"/>
+  <g fill="#111" transform="rotate(14 785 615)"><circle cx="740" cy="570" r="20"/><circle cx="830" cy="660" r="20"/><circle cx="785" cy="615" r="20"/><circle cx="830" cy="570" r="20"/><circle cx="740" cy="660" r="20"/></g>
+</svg>

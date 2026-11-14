@@ -1,0 +1,8 @@
+{
+  "appId": "ir.nardbaz.game",
+  "appName": "نردباز",
+  "webDir": "dist",
+  "backgroundColor": "#2a1a10",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
+}
