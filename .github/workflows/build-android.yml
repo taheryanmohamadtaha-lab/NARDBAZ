@@ -32,8 +32,10 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: نصب ابزارهای اندروید
-        uses: android-actions/setup-android@v3
+      - name: آماده‌سازی Android SDK (روی ران‌نر آماده است؛ فقط لایسنس‌ها پذیرفته می‌شوند)
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
       - name: نصب وابستگی‌ها
         run: |
