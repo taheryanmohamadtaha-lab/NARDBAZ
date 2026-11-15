@@ -50,6 +50,7 @@ export const DEFAULT_SETTINGS = {
   difficulty: 'medium',
   hints: true,
   theme: 'dark',
+  boardTheme: 'walnut',
   animSpeed: 'normal', // slow | normal | fast
   tutorialMessages: true,
 };

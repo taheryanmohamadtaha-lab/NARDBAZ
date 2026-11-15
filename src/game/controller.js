@@ -75,7 +75,7 @@ export class GameController {
     this.boardWrap = h('div', { class: 'board-wrap' });
     this.toastEl = h('div', { class: 'toast hidden' });
     this.boardWrap.appendChild(this.toastEl);
-    this.view = new BoardView(this.boardWrap, {});
+    this.view = new BoardView(this.boardWrap, { theme: this.app.settings().boardTheme });
     this.diceBar = h('div', { class: 'dice-bar' });
     this.rollBtn = h('button', { class: 'btn primary big roll-btn hidden', onClick: () => this.humanRoll() }, 'انداختن تاس');
     this.hintBtn = h('button', { class: 'btn', onClick: () => this.hint() }, '💡 راهنما');

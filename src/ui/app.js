@@ -6,6 +6,7 @@ import { ScenarioRunner } from '../tutorial/runner.js';
 import { CHAPTERS, ALL_LESSONS } from '../tutorial/lessons.js';
 import { PUZZLES, CATEGORIES } from '../practice/puzzles.js';
 import { configureSound, sfx } from '../audio/sound.js';
+import { BOARD_THEMES, BOARD_THEME_IDS } from '../game/themes.js';
 import * as store from '../storage/store.js';
 
 const LEVEL_FA = { easy: 'آسان', medium: 'متوسط', hard: 'سخت' };
@@ -130,8 +131,22 @@ export class App {
       item('⚙️', 'تنظیمات', () => this.go({ name: 'settings' })),
       item('ℹ️', 'درباره‌ی بازی', () => this.go({ name: 'about' })),
       item('🏆', 'آمار و رکوردها', () => this.statsDialog()),
+      item('🚪', 'خروج', () => this.exitApp()),
     );
     c.append(logo, list);
+  }
+
+  async exitApp() {
+    if (!(await confirmDialog('از نردباز خارج می‌شوید؟ بازی نیمه‌تمام ذخیره می‌ماند.', 'خروج', 'ماندن'))) return;
+    try {
+      const { App: CapApp } = await import('@capacitor/app');
+      await CapApp.exitApp();
+      return;
+    } catch (_) {
+      /* نسخه‌ی وب */
+    }
+    window.close();
+    modal({ body: 'در نسخه‌ی وب، برای خروج تب مرورگر را ببندید.', buttons: [{ label: 'باشه', kind: 'primary' }] });
   }
 
   startDialog() {
@@ -318,6 +333,16 @@ export class App {
       toggle('tutorialMessages', 'نمایش پیام‌های آموزشی'),
     );
     const look = h('div', { class: 'card' }, seg('theme', 'تم برنامه', [['dark', 'تیره'], ['light', 'روشن']]));
+    const grid = h('div', { class: 'themes' });
+    const paintThemes = () => [...grid.children].forEach((b) => b.classList.toggle('on', b.dataset.v === this.settings().boardTheme));
+    for (const id of BOARD_THEME_IDS) {
+      const P = BOARD_THEMES[id];
+      const sw = h('span', { class: 'swatch', style: { background: `linear-gradient(135deg, ${P.frame[0]}, ${P.frame[2]})` } },
+        h('i', { style: { background: `linear-gradient(90deg, ${P.pA} 0 33%, ${P.field[0]} 33% 50%, ${P.pB} 50% 83%, ${P.pA} 83%)` } }));
+      grid.appendChild(h('button', { class: 'theme-btn', 'data-v': id, onClick: () => { this.updateSettings({ boardTheme: id }); paintThemes(); sfx.click(); } }, sw, h('span', {}, P.name)));
+    }
+    paintThemes();
+    const boards = h('div', { class: 'card' }, grid);
     const data = h('div', { class: 'card' },
       h('div', { class: 'modal-buttons', style: { marginTop: 0 } },
         h('button', { class: 'btn', onClick: () => this.backupDialog() }, '💾 پشتیبان‌گیری از اطلاعات'),
@@ -337,6 +362,7 @@ export class App {
         h('div', { class: 'section-title' }, 'صدا'), sound,
         h('div', { class: 'section-title' }, 'بازی'), play,
         h('div', { class: 'section-title' }, 'ظاهر'), look,
+        h('div', { class: 'section-title' }, 'صفحه‌ی تخته‌نرد'), boards,
         h('div', { class: 'section-title' }, 'اطلاعات'), data,
       )),
     );

@@ -51,7 +51,7 @@ export class ScenarioRunner {
     this.boardWrap = h('div', { class: 'board-wrap' });
     this.toastEl = h('div', { class: 'toast hidden' });
     this.boardWrap.appendChild(this.toastEl);
-    this.view = new BoardView(this.boardWrap, {});
+    this.view = new BoardView(this.boardWrap, { theme: this.app.settings().boardTheme });
     this.coach = h('div', { class: 'coach' });
     this.diceBar = h('div', { class: 'dice-bar' });
     this.nextBtn = h('button', { class: 'btn primary', onClick: () => this.next() }, 'ادامه');

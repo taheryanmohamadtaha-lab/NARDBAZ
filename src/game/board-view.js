@@ -4,6 +4,8 @@
 // مکان‌ها (loc): عدد 0..23 برای خانه‌ها، 'bar' برای Bar و 'off' برای محل خروج.
 // نمایش: مختصات «افقی» ثابت است؛ در حالت عمودی گوشی کل تخته ۹۰ درجه چرخانده می‌شود تا بزرگ‌تر دیده شود.
 
+import { BOARD_THEMES } from './themes.js';
+
 const NS = 'http://www.w3.org/2000/svg';
 
 export const GEO = {
@@ -83,12 +85,14 @@ const ownCount = (board, p, i) => {
 };
 
 export class BoardView {
-  constructor(container, { onDown, onMove, onUp } = {}) {
+  constructor(container, opts = {}) {
+    const { onDown, onMove, onUp } = opts;
     this.container = container;
     this.handlers = { onDown, onMove, onUp };
     this.portrait = false;
     this.showNumbers = false;
     this.lastArgs = null;
+    this.pal = BOARD_THEMES[opts.theme] || BOARD_THEMES.walnut;
     this.svg = el('svg', { class: 'board-svg', preserveAspectRatio: 'xMidYMid meet' });
     container.appendChild(this.svg);
     this.defs();
@@ -145,17 +149,8 @@ export class BoardView {
       ['60%', '#2a2a2e'],
       ['100%', '#111114'],
     ]);
-    const wood = el('linearGradient', { id: 'gWood', x1: '0', y1: '0', x2: '1', y2: '1' }, d);
-    [
-      ['0%', '#8a5a34'],
-      ['50%', '#7a4c2b'],
-      ['100%', '#693f23'],
-    ].forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, wood));
-    const felt = el('linearGradient', { id: 'gField', x1: '0', y1: '0', x2: '0', y2: '1' }, d);
-    [
-      ['0%', '#c99a62'],
-      ['100%', '#b8864f'],
-    ].forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, felt));
+    this.themeDefs = el('g', {}, d);
+    this.buildThemeDefs();
     const glow = el('radialGradient', { id: 'gGlow' }, d);
     el('stop', { offset: '0%', 'stop-color': '#7dffb0', 'stop-opacity': '0.9' }, glow);
     el('stop', { offset: '100%', 'stop-color': '#7dffb0', 'stop-opacity': '0' }, glow);
@@ -164,15 +159,37 @@ export class BoardView {
     el('stop', { offset: '100%', 'stop-color': '#ffd966', 'stop-opacity': '0' }, gold);
   }
 
+  buildThemeDefs() {
+    const d = this.themeDefs;
+    while (d.firstChild) d.removeChild(d.firstChild);
+    const P = this.pal;
+    const wood = el('linearGradient', { id: 'gWood', x1: '0', y1: '0', x2: '1', y2: '1' }, d);
+    [['0%', P.frame[0]], ['50%', P.frame[1]], ['100%', P.frame[2]]].forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, wood));
+    const felt = el('linearGradient', { id: 'gField', x1: '0', y1: '0', x2: '0', y2: '1' }, d);
+    [['0%', P.field[0]], ['100%', P.field[1]]].forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, felt));
+  }
+
+  /** تغییر پوسته‌ی تخته */
+  setTheme(id) {
+    const pal = BOARD_THEMES[id] || BOARD_THEMES.walnut;
+    if (pal === this.pal) return;
+    this.pal = pal;
+    this.buildThemeDefs();
+    while (this.staticLayer.firstChild) this.staticLayer.removeChild(this.staticLayer.firstChild);
+    this.buildStatic();
+    this.setNumbers(this.showNumbers);
+  }
+
   buildStatic() {
+    const P = this.pal;
     const s = this.staticLayer;
     // قاب بیرونی
-    el('rect', { x: 0, y: 0, width: G.W, height: G.H, rx: 26, fill: '#2a1a10' }, s);
-    el('rect', { x: 10, y: 10, width: 856, height: 700, rx: 18, fill: 'url(#gWood)', stroke: '#3b2415', 'stroke-width': 3 }, s);
+    el('rect', { x: 0, y: 0, width: G.W, height: G.H, rx: 26, fill: P.outer }, s);
+    el('rect', { x: 10, y: 10, width: 856, height: 700, rx: 18, fill: 'url(#gWood)', stroke: P.frameStroke, 'stroke-width': 3 }, s);
     // دو نیمه‌ی زمین بازی
     const halves = [G.xLeft, G.xRight];
     for (const x of halves) {
-      el('rect', { x: x - 4, y: G.yTop - 4, width: 6 * G.PW + 8, height: G.yBottom - G.yTop + 8, rx: 6, fill: 'url(#gField)', stroke: '#4a2d18', 'stroke-width': 3 }, s);
+      el('rect', { x: x - 4, y: G.yTop - 4, width: 6 * G.PW + 8, height: G.yBottom - G.yTop + 8, rx: 6, fill: 'url(#gField)', stroke: P.fieldStroke, 'stroke-width': 3 }, s);
     }
     // مثلث‌ها
     for (let idx = 0; idx < 24; idx++) {
@@ -186,8 +203,8 @@ export class BoardView {
         'polygon',
         {
           points: `${x + 2},${y0} ${x + G.PW - 2},${y0} ${x + G.PW / 2},${y1}`,
-          fill: dark ? '#9c3a2b' : '#f1deb4',
-          stroke: dark ? '#6f261b' : '#d2b883',
+          fill: dark ? P.pA : P.pB,
+          stroke: dark ? P.pAs : P.pBs,
           'stroke-width': 1.2,
         },
         s,
@@ -196,13 +213,13 @@ export class BoardView {
     // نقش هندسی ایرانی (ختمی) در مرکز هر نیمه
     for (const x of halves) this.khatam(s, x + 3 * G.PW, MID_Y);
     // Bar
-    el('rect', { x: G.barX, y: G.yTop - 4, width: G.barW, height: G.yBottom - G.yTop + 8, fill: '#5b3820', stroke: '#3b2415', 'stroke-width': 3 }, s);
-    el('line', { x1: G.barX + G.barW / 2, y1: G.yTop, x2: G.barX + G.barW / 2, y2: G.yBottom, stroke: '#7a4c2b', 'stroke-width': 2 }, s);
+    el('rect', { x: G.barX, y: G.yTop - 4, width: G.barW, height: G.yBottom - G.yTop + 8, fill: P.bar, stroke: P.frameStroke, 'stroke-width': 3 }, s);
+    el('line', { x1: G.barX + G.barW / 2, y1: G.yTop, x2: G.barX + G.barW / 2, y2: G.yBottom, stroke: P.barLine, 'stroke-width': 2 }, s);
     // لولا
     [G.yTop + 120, G.yBottom - 120].forEach((y) => el('rect', { x: G.barX + 14, y: y - 18, width: 28, height: 36, rx: 5, fill: '#b9a06a', stroke: '#6d5a31' }, s));
     // سینی‌های خروج
-    el('rect', { x: G.trayX, y: G.yTop - 22, width: G.trayW, height: G.yBottom - G.yTop + 44, rx: 12, fill: '#3a2414', stroke: '#1d110a', 'stroke-width': 3 }, s);
-    el('line', { x1: G.trayX + 6, y1: MID_Y, x2: G.trayX + G.trayW - 6, y2: MID_Y, stroke: '#6b4326', 'stroke-width': 3 }, s);
+    el('rect', { x: G.trayX, y: G.yTop - 22, width: G.trayW, height: G.yBottom - G.yTop + 44, rx: 12, fill: P.tray, stroke: P.trayStroke, 'stroke-width': 3 }, s);
+    el('line', { x1: G.trayX + 6, y1: MID_Y, x2: G.trayX + G.trayW - 6, y2: MID_Y, stroke: P.orn, 'stroke-width': 3 }, s);
     // شماره‌ی خانه‌ها
     this.numberLayer = el('g', { 'pointer-events': 'none' }, s);
   }
@@ -210,12 +227,12 @@ export class BoardView {
   khatam(parent, cx, cy) {
     const g = el('g', { opacity: 0.55, 'pointer-events': 'none' }, parent);
     const sq = (rot, r) =>
-      el('rect', { x: cx - r, y: cy - r, width: 2 * r, height: 2 * r, fill: 'none', stroke: '#6b4326', 'stroke-width': 2.2, transform: `rotate(${rot} ${cx} ${cy})` }, g);
+      el('rect', { x: cx - r, y: cy - r, width: 2 * r, height: 2 * r, fill: 'none', stroke: this.pal.orn, 'stroke-width': 2.2, transform: `rotate(${rot} ${cx} ${cy})` }, g);
     sq(0, 30);
     sq(45, 30);
     sq(22.5, 20);
     sq(67.5, 20);
-    el('circle', { cx, cy, r: 8, fill: '#6b4326' }, g);
+    el('circle', { cx, cy, r: 8, fill: this.pal.orn }, g);
   }
 
   buildHits() {
@@ -241,7 +258,7 @@ export class BoardView {
       const x = pointCenterX(idx);
       const top = isTop(idx);
       const y = top ? G.yTop - 12 : G.yBottom + 26;
-      const t = el('text', { x, y, 'text-anchor': 'middle', 'font-size': 17, fill: '#f1deb4', 'font-weight': 700 }, n);
+      const t = el('text', { x, y, 'text-anchor': 'middle', 'font-size': 17, fill: this.pal.num, 'font-weight': 700 }, n);
       t.textContent = faNum(idx + 1);
       if (this.portrait) t.setAttribute('transform', `rotate(-90 ${x} ${y})`);
     }

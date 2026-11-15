@@ -13,7 +13,7 @@
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
-  font-family: 'NardFont', 'Vazirmatn', 'Noto Naskh Arabic', 'Noto Sans Arabic', system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
+  font-family: 'Vazirmatn', 'NardFont', 'Noto Naskh Arabic', 'Noto Sans Arabic', system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
 #app { height: 100%; }
 button { font-family: inherit; color: inherit; }
 .hidden { display: none !important; }
@@ -153,3 +153,10 @@ input[type=range] { width: 150px; accent-color: var(--accent); }
   .actions .btn { min-width: 80px; min-height: 40px; padding: 4px 8px; font-size: 14px; }
   .roll-btn { inset-inline: 0; }
 }
+
+/* انتخاب صفحه‌ی تخته */
+.themes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.theme-btn { display: flex; flex-direction: column; gap: 6px; align-items: center; padding: 8px; border-radius: 14px; border: 2px solid var(--line); background: var(--card2); cursor: pointer; font-size: 14px; }
+.theme-btn.on { border-color: var(--accent); box-shadow: 0 0 10px rgba(232,182,76,.4); }
+.swatch { display: block; width: 100%; height: 54px; border-radius: 9px; padding: 6px; }
+.swatch i { display: block; width: 100%; height: 100%; border-radius: 5px; }
